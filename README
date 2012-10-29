@@ -2,9 +2,11 @@ Title: multidim: a multidimensional array library for Racket
 
 Author: Danny Yoo (dyoo@hashcollision.org)
 
+
 Documentation: forthcoming.
 
-Test cases: forthcoming.
+
+Test cases are in test-multidim.rkt
 
 
 ----------------------------------------------------------------------
@@ -13,5 +15,4 @@ Related work:
 
     SRFI 25: Multi-dimensional Array Primitives
 
-Personally, I have a very hard time reading code that uses this
-library.
+Personally, I think SRFI 25 is too powerful and general.
