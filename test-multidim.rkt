@@ -62,6 +62,24 @@
  (check-equal? m (knuth-example)))
 
 
+(block
+ (define-multidim cube #:dims (3 3 3))
+ (define c (cube))
+ 
+ (for*/fold ([counter 0])
+            ([i (in-range 3)]
+             [j (in-range 3)]
+             [k (in-range 3)])
+   (cube-set! c i j k counter)
+   (add1 counter))
+ 
+ (check-equal? (for*/list ([i (in-range 3)]
+                           [j (in-range 3)]
+                           [k (in-range 3)])
+                 (cube-ref c i j k))
+               (build-list 27 (lambda (i) i))))
+
+
 ;; Test to see if we can set the source of the matrix and see
 ;; that the representation is as we expect.
 (block
