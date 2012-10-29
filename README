@@ -1,0 +1,10 @@
+
+
+
+
+Related work:
+
+    SRFI 25: Multi-dimensional Array Primitives
+
+Personally, I have a very hard time reading code that uses this
+library.
