@@ -45,8 +45,8 @@
 
 ;; A little macro to rewrite the application of a binary operator on a fixed set of arguments.
 (define-syntax (reduce stx)
-  (syntax-case stx ()
-    [(_ op args ...)
+  (syntax-parse stx
+    [(_ op:expr args:expr ...)
      (let loop ([args (syntax->list #'(args ...))])
        (cond
          [(null? (cdr args))
@@ -67,8 +67,6 @@
                    [name? (format-id #'name "~a?" #'name)]
                    [name-ref (format-id #'name "~a-ref" #'name)]
                    [name-set! (format-id #'name "~a-set!" #'name)]
-                   [unsafe-name-ref (format-id #'name "unsafe-~a-ref" #'name)]
-                   [unsafe-name-set! (format-id #'name "unsafe-~a-set!" #'name)]
                    [(index-args ...) (generate-temporaries #'(dims ...))]
                    [(ds ...) (generate-temporaries #'(dims ...))]      ;; dimensions
                    [(cs ...) (generate-temporaries #'(dims ...))])     ;; coefficients
@@ -83,7 +81,7 @@
              
              ;; We'll export a constructor, predicate, getter, and setter...
              ;; (and unsafe variations of the accessors)
-             (define-values (name name? name-ref name-set! unsafe-name-ref unsafe-name-set!)
+             (define-values (name name? name-ref name-set!)
                
                ;; First, do some computations up front.
                (let*-values ([(ds ...) (values dims ...)]
@@ -127,21 +125,7 @@
                                        (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)
                                        v))
                  
-                 ;; unsafe-getter
-                 (define (unsafe-name-ref a-multi index-args ...)
-                   (unsafe-vector-ref (unsafe-struct-ref a-multi 0)
-                                      (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)))
-                 
-                 ;; unsafe-setter
-                 (define (unsafe-name-set! a-multi index-args ... v)
-                   (unsafe-vector-set! (unsafe-struct-ref a-multi 0)
-                                       (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)
-                                       v))
-                 
-                 
                  (values name
                          predicate
                          name-ref
-                         name-set!
-                         unsafe-name-ref
-                         unsafe-name-set!)))))))]))
+                         name-set!)))))))]))
