@@ -94,13 +94,14 @@
                  
                  ;; We'll want a small helper to validate entry into the public functions.
                  ;; We want to check our types before hitting the unsafe operations.
-                 (define (check-entry! who a-multi index-args ...)
-                   (unless (predicate a-multi)
-                     (raise-type-error who (symbol->string 'name) a-multi))
-                   (begin (unless (and (exact-nonnegative-integer? index-args)
-                                       (< index-args ds))
-                            (raise-type-error who "indices within multidim bounds" (list index-args ...)))
-                          ...))
+                 (define-syntax-rule (check-entry! who a-multi index-args ...)
+                   (begin
+                     (unless (predicate a-multi)
+                       (raise-type-error who (symbol->string 'name) a-multi))
+                     (unless (and (exact-nonnegative-integer? index-args)
+                                  (< index-args ds))
+                       (raise-type-error who "indices within multidim bounds" (list index-args ...)))
+                     ...))
                  
                  ;; Constructor
                  (define (name #:source [v (make-vector size)])

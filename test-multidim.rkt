@@ -45,6 +45,8 @@
  (define-multidim go-board #:dims (rows cols))
  (define a-board (go-board))
  (check-true (go-board? a-board))
+ (check-false (go-board? (make-vector 361)))
+ 
  (go-board-set! a-board 9 9 "tengen")
  (check-equal? (go-board-ref a-board 9 9)  "tengen"))
 
@@ -109,7 +111,42 @@
  (define-multidim mat #:dims (2 3))
  (define an-immutable-vector #(0 0 0 0 0 0))
  (check-exn exn:fail? (lambda () (mat #:source an-immutable-vector))))
- 
+
+
+(block
+ ;; This should break because one of the dimensions is not a positive integer
+ (check-exn exn:fail? (lambda () 
+                        (block
+                         (define-multidim row #:dims (2 0 5))))))
+                         
+
+(block
+ (define-multidim mat #:dims (2 3))
+ (check-exn exn:fail? (lambda () (mat-set! (vector) 0 0 "hi")))
+ (check-exn exn:fail? (lambda () (mat-set! (mat) 0 3 "hi")))
+ (check-exn exn:fail? (lambda () (mat-ref (vector) 0 0 "hi")))
+ (check-exn exn:fail? (lambda () (mat-ref (mat) 0 3 "hi"))))
+
+
+
+;; Testing the limits...
+(block
+ (define bigger-than-fixnum (let loop ([i 1])
+                               (cond [(fixnum? i)
+                                      (loop (* i 2))]
+                                     [else
+                                      i])))
+ (check-false (fixnum? bigger-than-fixnum))
+ (check-true (fixnum? (quotient bigger-than-fixnum 2)))
+ (check-exn exn:fail? 
+            (lambda () (block
+                        (define-multidim impossibly-large #:dims (1 bigger-than-fixnum)))))
+ (check-exn exn:fail? 
+            (lambda () (block
+                        (define-multidim impossibly-large #:dims (2 (quotient bigger-than-fixnum 2))))))
+ (define-multidim not-impossibly-large #:dims (1 (quotient bigger-than-fixnum 2)))
+ (void))
+
 
 
 ;; Passing an ill-formed vector in the source should also fail.
