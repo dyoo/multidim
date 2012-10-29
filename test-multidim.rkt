@@ -60,3 +60,41 @@
  (knuth-example-set! m 2 4 10 2 
                      0)
  (check-equal? m (knuth-example)))
+
+
+;; Test to see if we can set the source of the matrix and see
+;; that the representation is as we expect.
+(block
+ (define-multidim mat #:dims (2 3))
+ (define v (make-vector 6))
+ (define m (mat #:source v))
+ (mat-set! m 0 0 'a)
+ (mat-set! m 0 1 'b)
+ (mat-set! m 0 2 'c)
+ (mat-set! m 1 0 'd)
+ (mat-set! m 1 1 'e)
+ (mat-set! m 1 2 'f)
+
+ (check-equal? (mat-ref m 0 0) 'a)
+ (check-equal? (mat-ref m 0 1) 'b)
+ (check-equal? (mat-ref m 0 2) 'c)
+ (check-equal? (mat-ref m 1 0) 'd)
+ (check-equal? (mat-ref m 1 1) 'e)
+ (check-equal? (mat-ref m 1 2) 'f)
+ (check-equal? v #(a b c d e f)))
+
+
+
+
+;; The source matrix must be mutable, or else we are breaking abstractions!
+(block
+ (define-multidim mat #:dims (2 3))
+ (define an-immutable-vector #(0 0 0 0 0 0))
+ (check-exn exn:fail? (lambda () (mat #:source an-immutable-vector))))
+ 
+
+
+;; Passing an ill-formed vector in the source should also fail.
+(block
+ (define-multidim mat #:dims (2 100))
+ (check-exn exn:fail? (lambda () (mat #:source (vector)))))

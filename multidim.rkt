@@ -103,8 +103,12 @@
                           ...))
                  
                  ;; Constructor
-                 (define (name)
-                   (internal-name (make-vector size)))
+                 (define (name #:source [v (make-vector size)])
+                   (unless (and (vector? v)
+                                (not (immutable? v))
+                                (>= (vector-length v) size))
+                     (raise-type-error 'name (format "mutable vector of length >= ~a" size) v))
+                   (internal-name v))
                  
                  ;; Getter
                  (define (name-ref a-multi index-args ...)
