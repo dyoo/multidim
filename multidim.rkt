@@ -12,24 +12,17 @@
 
 
 ;; An implementation of a multidimensional array library, based on sequential access
-;; from TAOCP Chapter 1, Section 2.2.6.
+;; from The Art of Computer Programming, Chapter 1, Section 2.2.6.
 ;;
 ;; This provides a form called define-multidim that creates multidimensional
 ;; array access definitions.
 ;;
-;; Example:
 ;;
-;;   (define rows 19)
-;;   (define cols 19)
-;;   (define-multidim go-board rows cols)
-;;   (define a-board (go-board))
-;;   (go-board? a-board)    ==> #t
-;;   (go-board-set! a-board 9 9 "tengen")
-;;   (go-board-ref a-board 9 9)  ==> tengen
+;; Usage: (define-multidim id #:dims (dim ...))
 ;;
-;; Usage: (define-multidim id dim ...)
-;; 
-;;   Defines a constructor "id", a predicate "id?", a getter "id-ref", and a setter "id-set!".
+;;      where each dim should be an expression that evaluates to a positive integer.
+;;
+;; This defines a constructor "id", a predicate "id?", a getter "id-ref", and a setter "id-set!".
 
 
 ;; Compile-time helpers:
@@ -38,7 +31,8 @@
     (define current-context (syntax-local-context))
     (unless (or (eq? current-context 'top-level)
                 (eq? current-context 'module)
-                (internal-definition-context? current-context))
+                (and (list? current-context) (or (liberal-define-context? (car current-context))
+                                                 (internal-definition-context? current-context))))
       (raise-syntax-error #f "multidim can only be used in a definition context" stx))))
 
 
@@ -62,11 +56,11 @@
   (check-definitional-context! stx)
   
   (syntax-parse stx
-    [(_ name:id dims:expr ...)
-     (with-syntax ([internal-name (format-id #f "~a" #'name)]
-                   [name? (format-id #'name "~a?" #'name)]
-                   [name-ref (format-id #'name "~a-ref" #'name)]
-                   [name-set! (format-id #'name "~a-set!" #'name)]
+    [(_ name:id #:dims (dims:expr ...))
+     (with-syntax ([internal-name (format-id #f "~a" (syntax-e #'name))]
+                   [name? (format-id #'name "~a?" (syntax-e #'name) #:source #'name)]
+                   [name-ref (format-id #'name "~a-ref" (syntax-e #'name) #:source #'name)]
+                   [name-set! (format-id #'name "~a-set!" (syntax-e #'name) #:source #'name)]
                    [(index-args ...) (generate-temporaries #'(dims ...))]
                    [(ds ...) (generate-temporaries #'(dims ...))]      ;; dimensions
                    [(cs ...) (generate-temporaries #'(dims ...))])     ;; coefficients
