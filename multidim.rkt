@@ -9,8 +9,22 @@
 ;; An implementation of a multidimensional array library, based on sequential access
 ;; from TAOCP Chapter 1, Section 2.2.6.
 ;;
-;; This provides a form called define-multidim that creates defintions for multidimensional
-;; array access.
+;; This provides a form called define-multidim that creates multidimensional
+;; array access definitions.
+;;
+;; Example:
+;;
+;;   (define rows 19)
+;;   (define cols 19)
+;;   (define-multidim go-board rows cols)
+;;   (define a-board (go-board))
+;;   (go-board? a-board)    ==> #t
+;;   (go-board-set! a-board 9 9 "tengen")
+;;   (go-board-ref a-board 9 9)  ==> tengen
+;;
+;; Usage: (define-multidim id dim ...)
+;; 
+;;   Defines a constructor "id", a predicate "id?", a getter "id-ref", and a setter "id-set!".
 
 
 ;; Compile-time helpers:
@@ -33,38 +47,44 @@
                    [name? (format-id #'name "~a?" #'name)]
                    [name-ref (format-id #'name "~a-ref" #'name)]
                    [name-set! (format-id #'name "~a-set!" #'name)]
-                   [(dim-args ...) (generate-temporaries #'(dims ...))]
-                   [(ds ...) (generate-temporaries #'(dims ...))]
-                   [(cs ...) (generate-temporaries #'(dims ...))])
-       (with-syntax ([internal-name? (format-id #'internal-name "~a?" #'internal-name)]
-                     [internal-name-data (format-id #'internal-name "~a-data" #'internal-name)])
+                   [(index-args ...) (generate-temporaries #'(dims ...))]
+                   [(ds ...) (generate-temporaries #'(dims ...))]      ;; dimensions
+                   [(cs ...) (generate-temporaries #'(dims ...))])     ;; coefficients
+       (with-syntax ([predicate (format-id #'internal-name "~a?" #'internal-name)])
          (syntax/loc stx
            (begin
              
              ;; We create an internal structure.  Users should not be able to construct
-             ;; it directly without going through the constructor
+             ;; it directly without going through the constructor.  We take advantage
+             ;; of this encapsulation later on in the use of the "unsafe" operations.             
              (struct internal-name (data) #:transparent)
+             
+             ;; We'll export a constructor, predicate, getter, and setter...
              (define-values (name name? name-ref name-set!)
+               
+               ;; First, do some computations up front.
                (let*-values ([(ds ...) (values dims ...)]
                              [(size) (* ds ...)]
                              [(cs ...) (apply values (compute-coefficients (list ds ...)))])
                  
-                 ;; Early check: make sure the integers are all exact nonnegative integers:
-                 (unless (and (exact-nonnegative-integer? ds) ...)
-                   (raise-type-error 'name "exact nonnegative integers" (list ds ...)))
+                 ;; Early check: make sure the dimensions are all exact positive integers:
+                 (unless (and (exact-positive-integer? ds) ...)
+                   (raise-type-error 'name "exact positive integers" (list ds ...)))
                  
-                 ;; Also make sure size doesn't go beyond indexable size:
+                 ;; Also make sure size doesn't go beyond indexable size.  We're using
+                 ;; a sequential representation, but there are limits to the size of a
+                 ;; vector.
                  (unless (fixnum? size)
-                   (raise-type-error 'name "dimension product of fixnum magnitude" size))
+                   (raise-type-error 'name "product of all dimensions representable as a fixnum" size))                 
                  
-                 ;; For the public functions, we want to check our types before
-                 ;; hitting the unsafe operations.
-                 (define (check-entry! who a-multi dim-args ...)
-                   (unless (internal-name? a-multi)
+                 ;; We'll want a small helper to validate entry into the public functions.
+                 ;; We want to check our types before hitting the unsafe operations.
+                 (define (check-entry! who a-multi index-args ...)
+                   (unless (predicate a-multi)
                      (raise-type-error who (symbol->string 'name) a-multi))
-                   (begin (unless (and (exact-nonnegative-integer? dim-args)
-                                       (< dim-args ds))
-                            (raise-type-error who "indices within multidim bounds" (list dim-args ...)))
+                   (begin (unless (and (exact-nonnegative-integer? index-args)
+                                       (< index-args ds))
+                            (raise-type-error who "indices within multidim bounds" (list index-args ...)))
                           ...))
                  
                  ;; Constructor
@@ -72,19 +92,19 @@
                    (internal-name (make-vector size)))
                  
                  ;; Getter
-                 (define (name-ref a-multi dim-args ...)
-                   (check-entry! 'name-ref a-multi dim-args ...)
+                 (define (name-ref a-multi index-args ...)
+                   (check-entry! 'name-ref a-multi index-args ...)
                    (unsafe-vector-ref (unsafe-struct-ref a-multi 0)
-                                      (unsafe-fx+ (unsafe-fx* dim-args cs) ...)))
+                                      (unsafe-fx+ (unsafe-fx* index-args cs) ...)))
                  
                  ;; Setter
-                 (define (name-set! a-multi dim-args ...)
-                   (check-entry! 'name-set! a-multi dim-args ...)
+                 (define (name-set! a-multi index-args ... v)
+                   (check-entry! 'name-set! a-multi index-args ...)
                    (unsafe-vector-set! (unsafe-struct-ref a-multi 0)
-                                       (unsafe-fx+ (unsafe-fx* dim-args cs) ...)
+                                       (unsafe-fx+ (unsafe-fx* index-args cs) ...)
                                        v))
                  
                  (values name
-                         internal-name?
+                         predicate
                          name-ref
                          name-set!)))))))]))
