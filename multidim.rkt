@@ -6,6 +6,11 @@
          "multidim-support.rkt"
          racket/unsafe/ops)
 
+
+(provide define-multidim)
+
+
+
 ;; An implementation of a multidimensional array library, based on sequential access
 ;; from TAOCP Chapter 1, Section 2.2.6.
 ;;
@@ -35,6 +40,21 @@
                 (eq? current-context 'module)
                 (internal-definition-context? current-context))
       (raise-syntax-error #f "multidim can only be used in a definition context" stx))))
+
+
+
+;; A little macro to rewrite the application of a binary operator on a fixed set of arguments.
+(define-syntax (reduce stx)
+  (syntax-case stx ()
+    [(_ op args ...)
+     (let loop ([args (syntax->list #'(args ...))])
+       (cond
+         [(null? (cdr args))
+          (car args)]
+         [else
+          (with-syntax ([head (car args)]
+                        [reduced-rest (loop (cdr args))])
+            #'(op head reduced-rest))]))]))
 
 
 (define-syntax (define-multidim stx)  
@@ -98,24 +118,24 @@
                  (define (name-ref a-multi index-args ...)
                    (check-entry! 'name-ref a-multi index-args ...)
                    (unsafe-vector-ref (unsafe-struct-ref a-multi 0)
-                                      (unsafe-fx+ (unsafe-fx* index-args cs) ...)))
+                                      (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)))
                  
                  ;; Setter
                  (define (name-set! a-multi index-args ... v)
                    (check-entry! 'name-set! a-multi index-args ...)
                    (unsafe-vector-set! (unsafe-struct-ref a-multi 0)
-                                       (unsafe-fx+ (unsafe-fx* index-args cs) ...)
+                                       (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)
                                        v))
-
+                 
                  ;; unsafe-getter
                  (define (unsafe-name-ref a-multi index-args ...)
                    (unsafe-vector-ref (unsafe-struct-ref a-multi 0)
-                                      (unsafe-fx+ (unsafe-fx* index-args cs) ...)))
-                
+                                      (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)))
+                 
                  ;; unsafe-setter
                  (define (unsafe-name-set! a-multi index-args ... v)
                    (unsafe-vector-set! (unsafe-struct-ref a-multi 0)
-                                       (unsafe-fx+ (unsafe-fx* index-args cs) ...)
+                                       (reduce unsafe-fx+ (unsafe-fx* index-args cs) ...)
                                        v))
                  
                  
