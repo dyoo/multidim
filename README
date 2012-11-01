@@ -15,4 +15,14 @@ Related work:
 
     SRFI 25: Multi-dimensional Array Primitives
 
-Personally, I think SRFI 25 is too powerful and general.
+
+
+    Jay McCarthy's matrix package:
+
+    http://planet.racket-lang.org/display.ss?package=matrix.plt&owner=jaymccarthy
+
+
+
+    Will Farr's matrix package:
+
+    http://planet.racket-lang.org/package-source/wmfarr/simple-matrix.plt/1/1/planet-docs/simple-matrix/index.html
