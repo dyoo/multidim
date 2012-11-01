@@ -7,7 +7,7 @@
          racket/unsafe/ops)
 
 
-(provide define-multidim)
+(provide define-multidim-type)
 
 
 
@@ -18,7 +18,7 @@
 ;; array access definitions.
 ;;
 ;;
-;; Usage: (define-multidim id #:dims (dim ...))
+;; Usage: (define-multidim-type id #:dims (dim ...))
 ;;
 ;;      where each dim should be an expression that evaluates to a positive integer.
 ;;
@@ -51,7 +51,7 @@
             #'(op head reduced-rest))]))]))
 
 
-(define-syntax (define-multidim stx)  
+(define-syntax (define-multidim-type stx)  
   
   (check-definitional-context! stx)
   
